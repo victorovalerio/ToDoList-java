@@ -1,3 +1,8 @@
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +15,14 @@ public class Lista {
 		int escolha = 0;
 		int loop = 1;
 		System.out.println("Bem vindo ao to-do app do beerman");
+		System.out.println("INICIALIZANDO");
+		        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("lista.dat"))) {
+		            List<Item> readObject = (List<Item>) ois.readObject();
+					lista = readObject;
+		            System.out.println("Lista.dat carregado");
+		        } catch (IOException | ClassNotFoundException e) {
+		            System.out.println("ERRO AO LER ARQUIVO");
+		       	}
 		while(loop > 0) {
 			System.out.println("Digite o que deseja fazer agora:\n"
 					+ "1) Adicionar um item\n"
@@ -124,7 +137,12 @@ public class Lista {
 	}
 
 	private static void salvar() {
-		System.out.println("salvar()");		
+		   try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("lista.dat"))) {
+	            oos.writeObject(lista);
+	            System.out.println("Procura o \"lista.dat\"");
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
 	}
 
 }
