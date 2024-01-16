@@ -1,0 +1,11 @@
+O objetivo desse projeto foi de criar uma pequena lista de "a fazeres", chamarei esses de itens. Os itens são objetos que contem 2 strings(nome e descrição) e uma boolean(concluido). A maior parte das instruções utiliza de streamAPI em java. Com esse programa eu queria não só práticar esse exercício em java, pois anteriormente só tinha feito em C mas também práticar conceitos do CRUD e entender como implementaria serialização através do java. Talvez para o futuro eu tente implementar uma interface gráfica pois o programa utiliza apenas do console, caso isso aconteça eu quero tentar usar o javaFX pois já tenho dois projetos usando swing. Enfim, devolta ao programa...
+Ao inicializar o programa o usuário é apresentado um menu com opções de:
+1) "Adicionar um item": O usuário dá um nome ao item, uma descrição e por padrão ele é considerado não concluido.
+2) "Ler a descrição de um item": O usuário digita uma string de pesquisa. Caso corresponda com o nome de algum item anterior, o programa apresenta a descrição do item. Caso contrário ele retorna uma mensagem de erro.
+3) "Deletar um item":  O usuário digita uma string de pesquisa. Caso corresponda com o nome de algum item anterior, o programa remove o item da lista. Caso contrário ele retorna uma mensagem de erro.
+4) "Marcar como feito": O usuário digita uma string de pesquisa. Caso corresponda com o nome de algum item anterior, o programa alterna o valor da variavel de conclusão. Se oo nome não corresponder ele retorna uma mensagem de erro.
+5) "Listar itens": Imprime em ordem de todos os itens presentes na coleção "lista". Cada item tem seu nome descrição e variavel de conclusão impressos.
+6) "Salvar alterações": Escreve a coleção "lista" presente durante a execução do programa em um arquivo "lista.dat". Esta foi feita através da implementação de java.io (ObjectOutputStream).
+
+Depois de implementar a opção de salvar alterações, fiz uma função de inicialização. Essa serviria para procurar o "lista.dat" e escrever seu conteúdo na coleção "lista", presente na execução do programa. Após testar um pouco implementei um bloco de try catch caso o arquivo não estivesse presente ou passível de leitura.
+Com isso o programa apresenta todos os atributos do CRUD. Caso eu revisite esse programa, será para implementar javaFX apenas.
