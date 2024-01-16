@@ -1,148 +1,195 @@
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
 
-public class Lista {
-	static Scanner entrada = new Scanner(System.in);
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JLabel;
+
+@SuppressWarnings("serial")
+public class Lista extends JFrame implements ActionListener{
 	static List<Item> lista = new ArrayList<>();
-	public static void main(String[] args) {
-		int escolha = 0;
-		int loop = 1;
-		System.out.println("Bem vindo ao to-do app do beerman");
-		System.out.println("INICIALIZANDO");
-		        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("lista.dat"))) {
-		            List<Item> readObject = (List<Item>) ois.readObject();
-					lista = readObject;
-		            System.out.println("Lista.dat carregado");
-		        } catch (IOException | ClassNotFoundException e) {
-		            System.out.println("ERRO AO LER ARQUIVO");
-		       	}
-		while(loop > 0) {
-			System.out.println("Digite o que deseja fazer agora:\n"
-					+ "1) Adicionar um item\n"
-					+ "2) Ler a descrição de um item\n"
-					+ "3) Deletar um item\n"
-					+ "4) Marcar como feito\n"
-					+ "5) Listar itens\n"
-					+ "6) Salvar alterações\n");
-			escolha = entrada.nextInt();
-			
-			switch(escolha) {
-				case 1 : adicionarItem();
-					break;
-				case 2 : lerDescricao();
-					break;
-				case 3 : deletarItem();
-					break;
-				case 4 : marcarItem();
-					break;
-				case 5 : listarItens();
-					break;
-				case 6 : salvar();
-					break;
-				default	: System.out.println("aff");
-			}
-			System.out.println("Quer continuar? 1/0\n");
-			
-			loop = entrada.nextInt();
+	static String nome = "";
+	static String descricao = "";
+	JButton adicionar = new JButton("Adicionar");
+	JButton marcar = new JButton("Marcar");
+	JButton excluir = new JButton("Excluir");
+	JButton atualizar = new JButton("Atualizar");
+	JButton mudaDescricao = new JButton("Mudar Descrição");
+	JPanel botoes = new JPanel();
+	JLabel label = new JLabel();
+	static Connection conexao = FabricaConexao.getConnection();
+	static Scanner entrada = new Scanner(System.in);
+	static boolean loop = true;
+	static String listaString = "";
+	
+	public Lista(){
+		try {
+			importaItems();
+		}catch(SQLException e) {
+			JOptionPane.showMessageDialog(null, "Não foi possível importar a lista", "ERRO DE ACESSO AO BANCO",JOptionPane.INFORMATION_MESSAGE);
 		}
-		entrada.close();
+		label.setText(listaString);
+		setSize(620, 480);
+		setVisible(true);
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLayout(new BorderLayout());
+		add(botoes,BorderLayout.SOUTH);
+		add(label,BorderLayout.NORTH);
+		botoes.add(adicionar);
+		botoes.add(atualizar);
+		botoes.add(marcar);
+		botoes.add(excluir);
+		adicionar.addActionListener(this);
+		atualizar.addActionListener(this);
+		marcar.addActionListener(this);
+		excluir.addActionListener(this);
 	}
-
-
-	private static void adicionarItem() {
-		System.out.println("adicionar item()\n");
-		String nome;
-		String descricao;
+	
+	
+	private void adicionarItem(){
+		String comandoInsert = "INSERT INTO todolist (nome, descricao, feito) VALUES (?, ?, ?)";
+		nome = JOptionPane.showInputDialog(null, "Digite o nome da tarefa", "ADICIONAR ITEM", JOptionPane.PLAIN_MESSAGE);
 		boolean feito = false;
-		System.out.println("Digite o nome do item");
-		entrada.nextLine();
-		nome = entrada.nextLine();
-		System.out.println("Digite a descrição do item");
-		descricao = entrada.nextLine();
+		descricao = JOptionPane.showInputDialog(null,"Descricao", "ADICIONAR DESCRICAO", JOptionPane.PLAIN_MESSAGE);
+		
+		try {
+			PreparedStatement stmt = conexao.prepareStatement(comandoInsert);
+			stmt.setString(1, nome);
+			stmt.setString(2, descricao);
+			stmt.setBoolean(3, false);
+			int rowsAffected = stmt.executeUpdate();
+			if(rowsAffected > 0)	JOptionPane.showMessageDialog(null,"Item adicionado a lista com sucesso","CONCLUIDO", JOptionPane.INFORMATION_MESSAGE);
+			else 	JOptionPane.showMessageDialog(null,"Erro ao adicionar item.","CONCLUIDO", JOptionPane.ERROR_MESSAGE);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null,"Erro ao adicionar item: "+ e.getMessage(),"ERRO", JOptionPane.ERROR_MESSAGE);
+		}
 		Item item = new Item(nome, descricao,feito);
 		lista.add(item);
-		
-		//verifica se foi adicionado
-		if(lista.stream().anyMatch(i -> i.nome.equals(nome))) System.out.println("ITEM ADICIONADO COM SUCESSO");
+		atualizaString();
 	}
-
-	private static void lerDescricao() {
-		System.out.println("Digite o nome de um item para ver a descrição");
-		entrada.nextLine();
-		String Pesquisa = entrada.nextLine();
+	
+	private void marcarItem() {
+		String comandoSQL = "UPDATE todolist "
+				+ "set feito = 1 "
+				+ "where nome = ?";
 		
-		Optional<Item> itemEncontrado = 
-		lista.stream().filter(i -> i.nome.equals(Pesquisa)).findFirst();
-		
-		Item item = itemEncontrado.orElse(null);
-		if(item!= null) {
-			System.out.println("ITEM \"" + item.nome + "\" TEM A DESCRIÇÃO: \"" + item.descricao + "\"");
-		} else {
-			System.out.println("ITEM NÃO ENCONTRADO");
+		String nomeDoItem = JOptionPane.showInputDialog(null,"Digite o nome do item para eu marcar", "MARCAR", JOptionPane.PLAIN_MESSAGE);
+	
+		try {
+			PreparedStatement stmt = conexao.prepareStatement(comandoSQL);
+			stmt.setString(1, nomeDoItem);
+			stmt.execute();
+			JOptionPane.showMessageDialog(null, "Item adicionado com sucesso","FEITO", JOptionPane.INFORMATION_MESSAGE);
+			Thread.sleep(1000);
+			atualizaString();			
+		} catch (SQLException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null,
+					"Não foi possível marcar o item. Erro: " + e.getMessage(),
+					"ERRO",
+					JOptionPane.ERROR_MESSAGE);
 		}
 	}
-
-	private static void marcarItem() {
-		System.out.println("Digite o nome de um item para marcar como feito ou nao");
-		entrada.nextLine();
-		String Pesquisa = entrada.nextLine();
+	private void mudarDescricao() {
+		String comandoSQL = "UPDATE todolist "
+				+ "set descricao = ?"
+				+ "where nome = ?";
 		
-		Optional<Item> itemEncontrado = 
-		lista.stream().filter(i -> i.nome.equals(Pesquisa)).findFirst();
-		
-		Item item = itemEncontrado.orElse(null);
-		if(item!= null) {
-			System.out.println("ITEM  \"" + item.nome + "\" ALTERADO");
-			item.marcar();
-		} else {
-			System.out.println("ITEM NÃO ENCONTRADO");
+		String nomeDoItem = JOptionPane.showInputDialog(null,"Digite o nome do item para trocar a descricao", "MUDAR DESCRIÇÃO", JOptionPane.PLAIN_MESSAGE);
+		String novaDescricao = JOptionPane.showInputDialog(null,"Digite a nova descricao", "MUDAR DESCRIÇÃO", JOptionPane.PLAIN_MESSAGE);
+	
+		try {
+			PreparedStatement stmt = conexao.prepareStatement(comandoSQL);
+			stmt.setString(1,novaDescricao);
+			stmt.setString(2, nomeDoItem);
+			stmt.execute();
+			JOptionPane.showMessageDialog(null, "Item adicionado com sucesso","FEITO", JOptionPane.INFORMATION_MESSAGE);
+			Thread.sleep(1000);
+			atualizaString();			
+		} catch (SQLException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null,
+					"Não foi possível marcar o item. Erro: " + e.getMessage(),
+					"ERRO",
+					JOptionPane.ERROR_MESSAGE);
 		}
+		
 	}
-	private static void deletarItem()  {
-		System.out.println("Digite o nome de um item pra eu deletar");
-		entrada.nextLine();
-		String Pesquisa = entrada.nextLine();
-		
-		Optional<Item> itemEncontrado = 
-		lista.stream().filter(i -> i.nome.equals(Pesquisa)).findFirst();
-		
-		Item item = itemEncontrado.orElse(null);
-		if(item!= null) {
-			System.out.println("ITEM  \"" + item.nome + "\" ENCONTRADO.\n"
-					+ "Tem certeza que quer deletar "+ item.nome + "? -> 1/0\n");
-			int excluir = entrada.nextInt();
+	
+	private void deletarItem() {
+		System.out.println("CLICOU EM DELETAR");
+		atualizaString();
+	}
+
+	private void atualizaString(){
+		try {
+			importaItems();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		listaString = "";
+		listaString += "<html>";
+		for(Item i : lista) {
+    		listaString += "<li>" + "Nome: " + i.nome + ".Descrição: " + i.descricao + ". Feito? " + i.feito + ".\n" ;
+		}
+		listaString += "<html/>";
+		label.setText(listaString);
+	}
+
+	private void importaItems() throws SQLException {
+		lista.clear();
+	    String comandoSelect = "SELECT * FROM todolist";
+	    try {
+	    	PreparedStatement stmt = conexao.prepareStatement(comandoSelect);
+	    	ResultSet resultado = stmt.executeQuery();
+	    	while(resultado.next()) {
+	    		String nome = resultado.getString("nome");
+	    		String descricao = resultado.getString("descricao");
+	    		boolean feito = resultado.getBoolean("feito");
+	    		Item item = new Item(nome, descricao, feito);
+	    		lista.add(item);
+	    	}
+	    } catch(SQLException e) {
+	    	e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Não foi possível importar a lista:" + e.getMessage(), "ERRO DE ACESSO AO BANCO",JOptionPane.INFORMATION_MESSAGE);
+	    }
+	}
+	
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() instanceof JButton) {
+			JButton botao = (JButton) e.getSource();
 			
-			if (excluir <= 0) {
-				System.out.println("ok, deixa pra la"); 
-			}	else {
-				System.out.println("MORRA, " + item.nome + "!!!!!!");
-				lista.remove(item);
+			switch(botao.getText()) {
+				case "Adicionar" :	adicionarItem();
+								  	break;
+				case "Excluir" : 	deletarItem();
+									break;
+				case "Marcar"	:	marcarItem();
+									break;	
+				case "Mudar Descrição":	mudarDescricao();
+									break;	
 			}
-		} else {
-			System.out.println("ITEM NÃO ENCONTRADO");
 		}
-	}
+		entrada.close();
+		}
 
-	private static void listarItens() {
-		lista.stream().forEach(i -> System.out.println(lista.indexOf(i) + ") " + i.nome + "\nDescrição: \"" +
-	i.descricao +
-	"\"\nfeito? " + i.feito + "\n"));	
-	}
 
-	private static void salvar() {
-		   try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("lista.dat"))) {
-	            oos.writeObject(lista);
-	            System.out.println("Procura o \"lista.dat\"");
-	        } catch (IOException e) {
-	            e.printStackTrace();
-	        }
-	}
-
+	
 }

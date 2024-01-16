@@ -1,5 +1,6 @@
 import java.io.Serializable;
 
+@SuppressWarnings("serial")
 public class Item implements Serializable {
 	public String nome;
 	public String descricao;
