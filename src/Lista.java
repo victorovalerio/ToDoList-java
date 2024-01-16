@@ -54,6 +54,7 @@ public class Lista extends JFrame implements ActionListener{
 		atualizar.addActionListener(this);
 		marcar.addActionListener(this);
 		excluir.addActionListener(this);
+		atualizaString();
 	}
 	
 	
@@ -145,7 +146,7 @@ public class Lista extends JFrame implements ActionListener{
 		listaString = "";
 		listaString += "<html>";
 		for(Item i : lista) {
-    		listaString += "<li>" + "Nome: " + i.nome + ".Descrição: " + i.descricao + ". Feito? " + i.feito + ".\n" ;
+    		listaString += "<li>" + "<b>Nome<b/>: " + i.nome + ". Descrição: " + i.descricao + ". Feito? " + i.feito + ".\n" ;
 		}
 		listaString += "<html/>";
 		label.setText(listaString);
