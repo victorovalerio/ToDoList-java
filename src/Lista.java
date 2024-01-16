@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
@@ -11,9 +12,9 @@ import java.util.Scanner;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JLabel;
 
 @SuppressWarnings("serial")
 public class Lista extends JFrame implements ActionListener{
@@ -39,11 +40,12 @@ public class Lista extends JFrame implements ActionListener{
 			JOptionPane.showMessageDialog(null, "Não foi possível importar a lista", "ERRO DE ACESSO AO BANCO",JOptionPane.INFORMATION_MESSAGE);
 		}
 		label.setText(listaString);
+		label.setFont(new Font(Arial,18));
 		setSize(620, 480);
 		setVisible(true);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setLayout(new BorderLayout());
+		setLayout(ne w BorderLayout());
 		add(botoes,BorderLayout.SOUTH);
 		add(label,BorderLayout.NORTH);
 		botoes.add(adicionar);
