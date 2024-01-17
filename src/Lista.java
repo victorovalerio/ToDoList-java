@@ -1,5 +1,4 @@
 import java.awt.BorderLayout;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
@@ -24,8 +23,8 @@ public class Lista extends JFrame implements ActionListener{
 	JButton adicionar = new JButton("Adicionar");
 	JButton marcar = new JButton("Marcar");
 	JButton excluir = new JButton("Excluir");
-	JButton atualizar = new JButton("Atualizar");
-	JButton mudaDescricao = new JButton("Mudar Descrição");
+	JButton removerFeitos = new JButton("Remover Feitos");
+	JButton mudarDescricao = new JButton("Mudar Descrição");
 	JPanel botoes = new JPanel();
 	JLabel label = new JLabel();
 	static Connection conexao = FabricaConexao.getConnection();
@@ -40,22 +39,23 @@ public class Lista extends JFrame implements ActionListener{
 			JOptionPane.showMessageDialog(null, "Não foi possível importar a lista", "ERRO DE ACESSO AO BANCO",JOptionPane.INFORMATION_MESSAGE);
 		}
 		label.setText(listaString);
-		label.setFont(new Font(Arial,18));
 		setSize(620, 480);
 		setVisible(true);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setLayout(ne w BorderLayout());
+		setLayout(new BorderLayout());
 		add(botoes,BorderLayout.SOUTH);
 		add(label,BorderLayout.NORTH);
 		botoes.add(adicionar);
-		botoes.add(atualizar);
+		botoes.add(mudarDescricao);
 		botoes.add(marcar);
 		botoes.add(excluir);
+		botoes.add(removerFeitos);
 		adicionar.addActionListener(this);
-		atualizar.addActionListener(this);
+		mudarDescricao.addActionListener(this);
 		marcar.addActionListener(this);
 		excluir.addActionListener(this);
+		removerFeitos.addActionListener(this);
 		atualizaString();
 	}
 	
@@ -134,21 +134,62 @@ public class Lista extends JFrame implements ActionListener{
 	}
 	
 	private void deletarItem() {
-		System.out.println("CLICOU EM DELETAR");
-		atualizaString();
+		String comandoSQL = "DELETE FROM todolist WHERE nome = ?";
+		
+		String nomeDoItem = JOptionPane.showInputDialog(null,"Digite o nome do item para deletar: ", "DELETAR ITEM", JOptionPane.PLAIN_MESSAGE);
+		try {
+			PreparedStatement stmt = conexao.prepareStatement(comandoSQL);
+			stmt.setString(1, nomeDoItem);
+			stmt.execute();
+			JOptionPane.showMessageDialog(null, "Item removido com sucesso","FEITO", JOptionPane.INFORMATION_MESSAGE);
+			Thread.sleep(1000);
+			atualizaString();			
+		} catch (SQLException | InterruptedException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null,
+					"Não foi possível remover o item. Erro: " + e.getMessage(),
+					"ERRO",
+					JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
+	private void removerFeitos() {
+	String comandoSQL = "DELETE FROM todolist WHERE feito = 1";
+		
+		int confirmar = JOptionPane.showConfirmDialog(null,"Tem certeza que quer deletar todos os itens feitos?",
+				"DELETAR FEITOS", JOptionPane.YES_NO_OPTION);
+		if(confirmar == JOptionPane.YES_NO_OPTION) {
+			try {
+				PreparedStatement stmt = conexao.prepareStatement(comandoSQL);
+				stmt.execute();
+				int affectedRows = stmt.executeUpdate();
+				if(affectedRows == 1) JOptionPane.showMessageDialog(null, "Item removido com sucesso","FEITO", JOptionPane.INFORMATION_MESSAGE);
+				if(affectedRows > 1) JOptionPane.showMessageDialog(null, "Itens removidos com sucesso","FEITO", JOptionPane.INFORMATION_MESSAGE);
+				Thread.sleep(1000);
+				atualizaString();			
+			} catch (SQLException | InterruptedException e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(null,
+						"Não foi possível remover os itens. Erro: " + e.getMessage(),
+						"ERRO",
+						JOptionPane.ERROR_MESSAGE);
+			}
+		}
+	}
 	private void atualizaString(){
 		try {
 			importaItems();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(null,
+					"Não foi possível atualizar a String. Erro: " + e.getMessage(),
+					"ERRO",
+					JOptionPane.ERROR_MESSAGE);
 		}
 		listaString = "";
 		listaString += "<html>";
 		for(Item i : lista) {
-    		listaString += "<li>" + "<b>Nome<b/>: " + i.nome + ". Descrição: " + i.descricao + ". Feito? " + i.feito + ".\n" ;
+    		listaString += "<li>" + "Nome: " + i.nome + ". Descrição: " + i.descricao + ". Feito? " + i.feito + "." ;
 		}
 		listaString += "<html/>";
 		label.setText(listaString);
@@ -188,11 +229,11 @@ public class Lista extends JFrame implements ActionListener{
 									break;	
 				case "Mudar Descrição":	mudarDescricao();
 									break;	
+				case "Remover Feitos":	removerFeitos();
+										break;	
 			}
 		}
 		entrada.close();
 		}
-
-
 	
 }
